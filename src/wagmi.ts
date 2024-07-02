@@ -1,14 +1,9 @@
 import { http, createConfig } from "wagmi";
 import { arbitrum, arbitrumSepolia, hardhat } from "wagmi/chains";
-import { coinbaseWallet, metaMask, walletConnect } from "wagmi/connectors";
 
 export const config = createConfig({
   chains: [arbitrum, arbitrumSepolia, hardhat],
-  connectors: [
-    // metaMask(),
-    // coinbaseWallet(),
-    // walletConnect({ projectId: import.meta.env.VITE_WC_PROJECT_ID }),
-  ],
+  connectors: [],
   transports: {
     [arbitrum.id]: http(),
     [arbitrumSepolia.id]: http(),
