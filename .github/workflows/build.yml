@@ -1,0 +1,36 @@
+name: Build
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+env:
+  VITE_WC_PROJECT_ID: ${{ secrets.VITE_WC_PROJECT_ID }}
+  VITE_ADDRESS_SIFA: ${{ vars.VITE_ADDRESS_SIFA }}
+  VITE_ADDRESS_FAUCET: ${{ vars.VITE_ADDRESS_FAUCET }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: testnet
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: |
+            ./node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: dist
