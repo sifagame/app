@@ -8,8 +8,10 @@ import {
   useWriteContract,
 } from "wagmi";
 import { abi as FaucetAbi } from "../contracts/Faucet.json";
+import { abi as SifaAbi } from "../contracts/SifaToken.json";
 import { contracts } from "../wagmi";
 import { ErrorMessage, SuccessMessage } from "./Messages";
+import { formatUnits } from "viem";
 
 const Faucet = () => {
   const account = useAccount();
@@ -20,7 +22,12 @@ const Faucet = () => {
     address: contracts.Faucet,
   };
 
-  const { data: availabilityData } = useReadContracts({
+  const sifaContractConfig = {
+    abi: SifaAbi,
+    address: contracts.SIFA,
+  };
+
+  const { data } = useReadContracts({
     contracts: [
       {
         ...faucetContractConfig,
@@ -32,11 +39,38 @@ const Faucet = () => {
         functionName: "nextClaimAt",
         args: [address],
       },
+      {
+        ...sifaContractConfig,
+        functionName: "decimals",
+      },
+      {
+        ...sifaContractConfig,
+        functionName: "balanceOf",
+        args: [contracts.Faucet],
+      },
+      {
+        ...faucetContractConfig,
+        functionName: "DROP_AMOUNT",
+      },
+      {
+        ...faucetContractConfig,
+        functionName: "DELAY",
+      },
+      {
+        ...faucetContractConfig,
+        functionName: "REQUIRE_ETH",
+      },
     ],
   });
 
-  const available = availabilityData?.[0]?.result as boolean;
-  const nextClaimAt = availabilityData?.[1]?.result as bigint;
+  const available = data?.[0]?.result as boolean;
+  const nextClaimAt = data?.[1]?.result as bigint;
+  const decimals = data?.[2].result as number;
+  const faucetBalance = data?.[3].result as bigint;
+  const dropAmount = data?.[4].result as bigint;
+  const delay = Number(data?.[5].result);
+  const requireEth = data?.[6].result as bigint;
+
   console.log(available, nextClaimAt);
 
   const { data: hash, isPending, error, writeContract } = useWriteContract();
@@ -55,7 +89,18 @@ const Faucet = () => {
 
   return (
     <>
-      {!available && <RemainingTime nextClaimAt={nextClaimAt} />}
+      <p>Faucet status:</p>
+      <ul>
+        <li>
+          Balance available: {formatUnits(faucetBalance || 0n, decimals || 0)} SIFA
+        </li>
+        <li>
+          Claim amount: {formatUnits(dropAmount || 0n, decimals || 0)} SIFA
+        </li>
+        <li>Claim delay: {(delay || 0) / 60 / 60} hours</li>
+		<li>ETH hold required for claim: {formatUnits(requireEth || 0n, 18)}</li>
+      </ul>
+	  {!available && <RemainingTime nextClaimAt={nextClaimAt} />}
       <Button
         variant="contained"
         onClick={claim}

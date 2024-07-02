@@ -11,7 +11,7 @@ const Account = () => {
   return (
     <Box sx={{ pt: 1, display: "flex", justifyContent: "flex-end" }}>
       {account.status === "connected" ? (
-        <ConnectedAccount address={account.address} />
+        <ConnectedAccount address={account.address} chainId={account.chainId} />
       ) : (
         <Button variant="outlined" onClick={() => connect({ connector })}>
           Connect

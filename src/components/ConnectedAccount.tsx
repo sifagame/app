@@ -1,5 +1,5 @@
 import { Avatar, Badge, Typography, styled } from "@mui/material";
-import { useReadContracts } from "wagmi";
+import { useReadContracts, useSwitchChain } from "wagmi";
 import { abi as SifaAbi } from "../contracts/SifaToken.json";
 import { contracts } from "../wagmi";
 import { truncateEthAddress } from "../utils";
@@ -100,11 +100,15 @@ function stringAvatar(name: string) {
 
 interface ConnectedAccountProps {
   address: `0x${string}`;
+  chainId: number;
 }
 
 export const ConnectedAccount = (props: ConnectedAccountProps) => {
   const address = props.address;
   const name = address.substring(address.length - 2);
+
+  const { chains, switchChain } = useSwitchChain();
+  const [chain] = chains;
 
   return (
     <>
@@ -113,6 +117,8 @@ export const ConnectedAccount = (props: ConnectedAccountProps) => {
         overlap="circular"
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         variant="dot"
+        className={chain.id === props.chainId ? "connected" : "disconnected"}
+        onClick={() => switchChain({ chainId: chain.id })}
       >
         <Avatar {...stringAvatar(name.toUpperCase())} />
       </ConnectedBadge>

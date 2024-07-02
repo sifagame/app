@@ -1,13 +1,17 @@
 import { http, createConfig } from "wagmi";
 import { arbitrum, arbitrumSepolia, hardhat } from "wagmi/chains";
+import type { Chain } from "wagmi/chains";
+
+const chainId = Number.parseInt(import.meta.env.VITE_NETWORK_ID);
+const chain = [arbitrum, arbitrumSepolia, hardhat].find(
+  (c) => c.id === chainId
+);
 
 export const config = createConfig({
-  chains: [arbitrum, arbitrumSepolia, hardhat],
+  chains: [chain as Chain],
   connectors: [],
   transports: {
-    [arbitrum.id]: http(),
-    [arbitrumSepolia.id]: http(),
-    [hardhat.id]: http(),
+    [chainId]: http(),
   },
 });
 
