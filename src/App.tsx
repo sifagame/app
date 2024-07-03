@@ -7,8 +7,8 @@ import Faucet from "./components/Faucet";
 
 interface TabPanelProps {
   children?: React.ReactNode;
-  index: number;
-  value: number;
+  index: string;
+  value: string;
 }
 
 function CustomTabPanel(props: TabPanelProps) {
@@ -28,9 +28,9 @@ function CustomTabPanel(props: TabPanelProps) {
 }
 
 function App() {
-  const [tab, setTab] = React.useState(0);
+  const [tab, setTab] = React.useState("faucet");
 
-  const handleChangeTab = (_: React.SyntheticEvent, newTab: number) => {
+  const handleChangeTab = (_: React.SyntheticEvent, newTab: string) => {
     setTab(newTab);
   };
 
@@ -47,9 +47,9 @@ function App() {
               onChange={handleChangeTab}
               aria-label="basic tabs example"
             >
-              <Tab label="Faucet" />
-              <Tab label="Play" disabled />
-              <Tab label="Stake" disabled />
+              <Tab value="faucet" label="Faucet" />
+              <Tab value="play" label="Play" disabled />
+              <Tab value="stake" label="Stake" disabled />
             </Tabs>
           </Grid>
           <Grid item sx={{ flexGrow: 1 }}>
@@ -57,13 +57,13 @@ function App() {
           </Grid>
         </Grid>
       </header>
-      <CustomTabPanel value={tab} index={0}>
+      <CustomTabPanel value={tab} index="faucet">
         <Faucet />
       </CustomTabPanel>
-      <CustomTabPanel value={tab} index={1}>
+      <CustomTabPanel value={tab} index="play">
         TBA
       </CustomTabPanel>
-      <CustomTabPanel value={tab} index={2}>
+      <CustomTabPanel value={tab} index="stake">
         Vault
       </CustomTabPanel>
     </Container>

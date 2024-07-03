@@ -1,6 +1,10 @@
 import { http, createConfig } from "wagmi";
 import { arbitrum, arbitrumSepolia, hardhat } from "wagmi/chains";
 import type { Chain } from "wagmi/chains";
+import GA from "react-ga";
+
+const trackingId = import.meta.env.VITE_ANALYTICS_ID;
+GA.initialize(trackingId);
 
 const chainId = Number.parseInt(import.meta.env.VITE_NETWORK_ID);
 const chain = [arbitrum, arbitrumSepolia, hardhat].find(
