@@ -12,8 +12,10 @@ import { abi as SifaAbi } from "../contracts/SifaToken.json";
 import { contracts } from "../wagmi";
 import { ErrorMessage, SuccessMessage } from "./Messages";
 import { formatUnits } from "viem";
+import useAnalyticsEventTracker from "../hooks/useAnalyticsEventTracker";
 
 const Faucet = () => {
+  const gaEvent = useAnalyticsEventTracker("Faucet");
   const account = useAccount();
   const address = account?.address || "0x";
 
@@ -80,6 +82,7 @@ const Faucet = () => {
   });
 
   const claim = () => {
+    gaEvent("Claim Attempt", "");
     writeContract({
       ...faucetContractConfig,
       functionName: "drop",
@@ -87,20 +90,31 @@ const Faucet = () => {
     });
   };
 
+  if (error) {
+	gaEvent("Claim Failed");
+  }
+
+  if (result?.isSuccess) {
+	gaEvent("Claim Success");
+  }
+
   return (
     <>
       <p>Faucet status:</p>
       <ul>
         <li>
-          Balance available: {formatUnits(faucetBalance || 0n, decimals || 0)} SIFA
+          Balance available: {formatUnits(faucetBalance || 0n, decimals || 0)}{" "}
+          SIFA
         </li>
         <li>
           Claim amount: {formatUnits(dropAmount || 0n, decimals || 0)} SIFA
         </li>
         <li>Claim delay: {(delay || 0) / 60 / 60} hours</li>
-		<li>ETH hold required for claim: {formatUnits(requireEth || 0n, 18)}</li>
+        <li>
+          ETH hold required for claim: {formatUnits(requireEth || 0n, 18)}
+        </li>
       </ul>
-	  {!available && <RemainingTime nextClaimAt={nextClaimAt} />}
+      {!available && <RemainingTime nextClaimAt={nextClaimAt} />}
       <Button
         variant="contained"
         onClick={claim}
