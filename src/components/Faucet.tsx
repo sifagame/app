@@ -54,6 +54,9 @@ const Faucet = () => {
       functionName: "drop",
       args: [address],
     });
+	const newStatus = status;
+	newStatus.available = false;
+	setStatus(newStatus);
   };
 
   if (error) {
