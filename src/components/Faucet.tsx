@@ -41,9 +41,14 @@ const Faucet = () => {
     address: contracts.SIFA,
   };
 
-  const { data: hash, isPending, error, writeContract, isError } = useWriteContract();
+  const {
+    data: hash,
+    error,
+    writeContract,
+    status: writeStatus,
+  } = useWriteContract();
 
-  const { isSuccess } = useWaitForTransactionReceipt({
+  const { status: txStatus } = useWaitForTransactionReceipt({
     hash: hash,
   });
 
@@ -54,13 +59,16 @@ const Faucet = () => {
       functionName: "drop",
       args: [address],
     });
+    const newStatus = status;
+    newStatus.available = false;
+    setStatus(newStatus);
   };
 
   if (error) {
     gaEvent("Claim Failed");
   }
 
-  if (isSuccess) {
+  if ("success" === txStatus) {
     gaEvent("Claim Success");
   }
 
@@ -100,9 +108,12 @@ const Faucet = () => {
     ],
   });
 
+  const inProgress =
+    "pending" === writeStatus ||
+    ("success" === writeStatus && "pending" === txStatus);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
-	console.log(data);
     setStatus({
       available: data?.[0]?.result as boolean,
       nextClaimAt: data?.[1]?.result as bigint,
@@ -113,7 +124,7 @@ const Faucet = () => {
       requireEth: data?.[6].result as bigint,
     });
 	refetch();
-  }, [data, isSuccess, isError]);
+  }, [data, inProgress]);
 
   return (
     <>
@@ -137,11 +148,11 @@ const Faucet = () => {
       <Button
         variant="contained"
         onClick={claim}
-        disabled={!status.available || isPending}
+        disabled={!status.available || inProgress}
       >
         Claim
       </Button>
-      {isPending && (
+      {inProgress && (
         <CircularProgress
           size={16}
           sx={{
@@ -153,7 +164,7 @@ const Faucet = () => {
         />
       )}
       {error && <ErrorMessage message={error.toString()} />}
-      {isSuccess && (
+      {"success" === txStatus && (
         <SuccessMessage message={`Claim successful, tx: ${hash}`} />
       )}
     </>
