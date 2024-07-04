@@ -4,6 +4,7 @@ import { abi as SifaAbi } from "../contracts/SifaToken.json";
 import { contracts } from "../wagmi";
 import { truncateEthAddress } from "../utils";
 import { formatUnits } from "viem";
+import { useEffect } from "react";
 
 interface BalanceProps {
   address: `0x${string}`;
@@ -14,7 +15,8 @@ const Balance = (props: BalanceProps) => {
     abi: SifaAbi,
     address: contracts.SIFA,
   };
-  const { data } = useReadContracts({
+
+  const { data, refetch } = useReadContracts({
     contracts: [
       {
         ...contractConfig,
@@ -39,9 +41,19 @@ const Balance = (props: BalanceProps) => {
     (decimals?.result as number) || 0
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies:
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 10000);
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <Typography sx={{ pt: 0.5, pb: 0.5, pr: 1, lineHeight: 2 }}>
-      {balance} {symbol?.result?.toString()}
+      {balance ? `${balance} ${symbol?.result?.toString()}` : ""}
     </Typography>
   );
 };
