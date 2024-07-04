@@ -13,8 +13,20 @@ import { contracts } from "../wagmi";
 import { ErrorMessage, SuccessMessage } from "./Messages";
 import { formatUnits } from "viem";
 import useAnalyticsEventTracker from "../hooks/useAnalyticsEventTracker";
+import { useEffect, useState } from "react";
+
+interface FaucetStatus {
+  available: boolean;
+  nextClaimAt: bigint;
+  decimals: number;
+  faucetBalance: bigint;
+  dropAmount: bigint;
+  delay: number;
+  requireEth: bigint;
+}
 
 const Faucet = () => {
+  const [status, setStatus] = useState({} as FaucetStatus);
   const gaEvent = useAnalyticsEventTracker("Faucet");
   const account = useAccount();
   const address = account?.address || "0x";
@@ -29,7 +41,30 @@ const Faucet = () => {
     address: contracts.SIFA,
   };
 
-  const { data } = useReadContracts({
+  const { data: hash, isPending, error, writeContract, isError } = useWriteContract();
+
+  const { isSuccess } = useWaitForTransactionReceipt({
+    hash: hash,
+  });
+
+  const claim = () => {
+    gaEvent("Claim Attempt", "");
+    writeContract({
+      ...faucetContractConfig,
+      functionName: "drop",
+      args: [address],
+    });
+  };
+
+  if (error) {
+    gaEvent("Claim Failed");
+  }
+
+  if (isSuccess) {
+    gaEvent("Claim Success");
+  }
+
+  const { data, refetch } = useReadContracts({
     contracts: [
       {
         ...faucetContractConfig,
@@ -65,60 +100,44 @@ const Faucet = () => {
     ],
   });
 
-  const available = data?.[0]?.result as boolean;
-  const nextClaimAt = data?.[1]?.result as bigint;
-  const decimals = data?.[2].result as number;
-  const faucetBalance = data?.[3].result as bigint;
-  const dropAmount = data?.[4].result as bigint;
-  const delay = Number(data?.[5].result);
-  const requireEth = data?.[6].result as bigint;
-
-  console.log(available, nextClaimAt);
-
-  const { data: hash, isPending, error, writeContract } = useWriteContract();
-
-  const result = useWaitForTransactionReceipt({
-    hash: hash,
-  });
-
-  const claim = () => {
-    gaEvent("Claim Attempt", "");
-    writeContract({
-      ...faucetContractConfig,
-      functionName: "drop",
-      args: [address],
+  // biome-ignore lint/correctness/useExhaustiveDependencies:
+  useEffect(() => {
+	console.log(data);
+    setStatus({
+      available: data?.[0]?.result as boolean,
+      nextClaimAt: data?.[1]?.result as bigint,
+      decimals: data?.[2].result as number,
+      faucetBalance: data?.[3].result as bigint,
+      dropAmount: data?.[4].result as bigint,
+      delay: Number(data?.[5].result),
+      requireEth: data?.[6].result as bigint,
     });
-  };
-
-  if (error) {
-	gaEvent("Claim Failed");
-  }
-
-  if (result?.isSuccess) {
-	gaEvent("Claim Success");
-  }
+	refetch();
+  }, [data, isSuccess, isError]);
 
   return (
     <>
       <p>Faucet status:</p>
       <ul>
         <li>
-          Balance available: {formatUnits(faucetBalance || 0n, decimals || 0)}{" "}
-          SIFA
+          Balance available:{" "}
+          {formatUnits(status.faucetBalance || 0n, status.decimals || 0)} SIFA
         </li>
         <li>
-          Claim amount: {formatUnits(dropAmount || 0n, decimals || 0)} SIFA
+          Claim amount:{" "}
+          {formatUnits(status.dropAmount || 0n, status.decimals || 0)} SIFA
         </li>
-        <li>Claim delay: {(delay || 0) / 60 / 60} hours</li>
+        <li>Claim delay: {(status.delay || 0) / 60 / 60} hours</li>
         <li>
-          ETH hold required for claim: {formatUnits(requireEth || 0n, 18)}
+          ETH hold required for claim:{" "}
+          {formatUnits(status.requireEth || 0n, 18)}
         </li>
       </ul>
-      {!available && <RemainingTime nextClaimAt={nextClaimAt} />}
+      {!status.available && <RemainingTime nextClaimAt={status.nextClaimAt} />}
       <Button
         variant="contained"
         onClick={claim}
-        disabled={!available || isPending}
+        disabled={!status.available || isPending}
       >
         Claim
       </Button>
@@ -134,7 +153,7 @@ const Faucet = () => {
         />
       )}
       {error && <ErrorMessage message={error.toString()} />}
-      {result?.isSuccess && (
+      {isSuccess && (
         <SuccessMessage message={`Claim successful, tx: ${hash}`} />
       )}
     </>
