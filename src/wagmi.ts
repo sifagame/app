@@ -1,7 +1,7 @@
 import { http, createConfig } from "wagmi";
 import { arbitrum, arbitrumSepolia, hardhat } from "wagmi/chains";
 import type { Chain } from "wagmi/chains";
-import GA from "react-ga";
+import GA from "react-ga4";
 
 const trackingId = import.meta.env.VITE_ANALYTICS_ID;
 GA.initialize(trackingId);
@@ -22,6 +22,7 @@ export const config = createConfig({
 export const contracts = {
   SIFA: import.meta.env.VITE_ADDRESS_SIFA,
   Faucet: import.meta.env.VITE_ADDRESS_FAUCET,
+  Emitter: import.meta.env.VITE_ADDRESS_EMITTER,
 };
 
 declare module "wagmi" {
