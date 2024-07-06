@@ -104,7 +104,6 @@ export const Emitter = () => {
   // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
     if (account && data) {
-      console.log(data);
       setStatus({
         owner: data?.[0]?.result as `0x${string}`,
         epoch: data?.[1]?.result as number,
