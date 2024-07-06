@@ -4,6 +4,7 @@ import { Box, Grid, Tabs, Tab, Container } from "@mui/material";
 import Logo from "./components/Logo";
 import Account from "./components/Account";
 import Faucet from "./components/Faucet";
+import { Emitter } from "./components/Emitter";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -48,6 +49,7 @@ function App() {
               aria-label="basic tabs example"
             >
               <Tab value="faucet" label="Faucet" />
+			  <Tab value="emitter" label="Emitter" />
               <Tab value="play" label="Play" disabled />
               <Tab value="stake" label="Stake" disabled />
             </Tabs>
@@ -59,6 +61,9 @@ function App() {
       </header>
       <CustomTabPanel value={tab} index="faucet">
         <Faucet />
+      </CustomTabPanel>
+      <CustomTabPanel value={tab} index="emitter">
+        <Emitter />
       </CustomTabPanel>
       <CustomTabPanel value={tab} index="play">
         TBA
