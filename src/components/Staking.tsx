@@ -1,4 +1,4 @@
-import { config, contracts } from "../wagmi";
+import { contracts } from "../wagmi";
 import { abi as vaultAbi } from "../contracts/Vault.json";
 import { abi as sifaAbi } from "../contracts/SifaToken.json";
 import {
@@ -22,7 +22,6 @@ import {
 import { formatEther, maxInt256, parseEther, parseUnits } from "viem";
 import { ErrorMessage, SuccessMessage } from "./Messages";
 import useAnalyticsEventTracker from "../hooks/useAnalyticsEventTracker";
-import { readContract } from "viem/actions";
 
 export type StakingStatus = {
   decimals: number;
