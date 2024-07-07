@@ -23,6 +23,7 @@ export const contracts = {
   SIFA: import.meta.env.VITE_ADDRESS_SIFA,
   Faucet: import.meta.env.VITE_ADDRESS_FAUCET,
   Emitter: import.meta.env.VITE_ADDRESS_EMITTER,
+  Vault: import.meta.env.VITE_ADDRESS_VAULT,
 };
 
 declare module "wagmi" {
