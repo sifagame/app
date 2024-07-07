@@ -1,8 +1,9 @@
-import { contracts } from "../wagmi";
+import { config, contracts } from "../wagmi";
 import { abi as vaultAbi } from "../contracts/Vault.json";
 import { abi as sifaAbi } from "../contracts/SifaToken.json";
 import {
   useAccount,
+  useReadContract,
   useReadContracts,
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -21,6 +22,7 @@ import {
 import { formatEther, maxInt256, parseEther, parseUnits } from "viem";
 import { ErrorMessage, SuccessMessage } from "./Messages";
 import useAnalyticsEventTracker from "../hooks/useAnalyticsEventTracker";
+import { readContract } from "viem/actions";
 
 export type StakingStatus = {
   decimals: number;
@@ -68,6 +70,20 @@ const Staking = () => {
   const { status: txStatus } = useWaitForTransactionReceipt({
     hash: hash,
   });
+
+  const { data: previewRedeem, refetch: refetchPreviewRedeem } =
+    useReadContract({
+      ...vaultContractConfig,
+      functionName: "previewRedeem",
+      args: [redeemAmount],
+    });
+
+  const { data: previewDeposit, refetch: refetchPreviewDeposit } =
+    useReadContract({
+      ...vaultContractConfig,
+      functionName: "previewDeposit",
+      args: [depositAmount],
+    });
 
   const { data, refetch } = useReadContracts({
     contracts: [
@@ -168,7 +184,6 @@ const Staking = () => {
   };
 
   const handleChangeRedeemSlider = (_: Event, newValue: number | number[]) => {
-    console.log(newValue);
     setRedeemAmount(redeemPercentToAmount(newValue as number));
   };
 
@@ -201,7 +216,21 @@ const Staking = () => {
   // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
     refetch();
+    if ("success" === txStatus) {
+      setDepositAmount(0n);
+      setRedeemAmount(0n);
+    }
   }, [txStatus]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies:
+  useEffect(() => {
+    refetchPreviewRedeem();
+  }, [redeemAmount]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies:
+  useEffect(() => {
+    refetchPreviewDeposit();
+  }, [depositAmount]);
 
   return (
     <>
@@ -210,20 +239,25 @@ const Staking = () => {
           <Typography variant="h5" sx={{ pb: 1 }}>
             Your shares: {formatEther(status.shares)}
           </Typography>
-		  <ul>
-			<li>SIFA value: {formatEther(status.maxWithdraw)}</li>
-			<li>Share price: {formatEther(status.sharePrice)} SIFA/share</li>
-		  </ul>
+          <ul>
+            <li>SIFA value: {formatEther(status.maxWithdraw)}</li>
+            <li>Share price: {formatEther(status.sharePrice)} SIFA/share</li>
+          </ul>
         </Grid>
         <Grid item md={4}>
           <Typography variant="h5" sx={{ pb: 2 }}>
-            Deposit
+            Deposit SIFA
           </Typography>
+          <p>
+            To make the deposit, you need to approve spending first, then you
+            can specify the amount of SIFA you want to deposit and confirm the
+            transaction.
+          </p>
           <FormGroup sx={{ pb: 1 }}>
             <TextField
               required
               id="deposit-amount"
-              label="Amount"
+              label="SIFA Amount"
               variant="outlined"
               value={formatEther(depositAmount)}
               onChange={handleChangeDepositAmount}
@@ -238,6 +272,9 @@ const Staking = () => {
               }}
             />
           </FormGroup>
+          <Typography>
+            Receive {formatEther((previewDeposit as bigint) || 0n)} shares
+          </Typography>
           <FormGroup sx={{ pb: 1 }}>
             <Button variant="outlined" onClick={approve}>
               Approve
@@ -255,7 +292,7 @@ const Staking = () => {
         </Grid>
         <Grid item md={4}>
           <Typography variant="h5" sx={{ pb: 2 }}>
-            Redeem
+            Redeem Shares
           </Typography>
           <FormGroup>
             <TextField
@@ -275,7 +312,7 @@ const Staking = () => {
               }}
             />
           </FormGroup>
-          <FormGroup>
+          <FormGroup sx={{ pl: 2, pr: 2, pb: 1 }}>
             <Slider
               value={redeemAmountToPercent(redeemAmount)}
               onChange={handleChangeRedeemSlider}
@@ -291,6 +328,9 @@ const Staking = () => {
               ]}
             />
           </FormGroup>
+          <Typography>
+            Withdraw {formatEther((previewRedeem as bigint) || 0n)} SIFA
+          </Typography>
           <FormGroup>
             <Button
               variant="contained"
