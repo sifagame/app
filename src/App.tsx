@@ -52,11 +52,11 @@ function App() {
             <Tabs
               value={tab}
               onChange={handleChangeTab}
-              aria-label="basic tabs example"
+              aria-label="SIFA tabs"
             >
+              <Tab value="play" label="Play" disabled />
               <Tab value="faucet" label="Faucet" />
               <Tab value="emitter" label="Emitter" />
-              <Tab value="play" label="Play" disabled />
               <Tab value="stake" label="Stake" />
             </Tabs>
           </Grid>
@@ -67,14 +67,14 @@ function App() {
       </header>
       {connected ? (
         <>
+          <CustomTabPanel value={tab} index="play">
+            TBA
+          </CustomTabPanel>
           <CustomTabPanel value={tab} index="faucet">
             <Faucet />
           </CustomTabPanel>
           <CustomTabPanel value={tab} index="emitter">
             <Emitter />
-          </CustomTabPanel>
-          <CustomTabPanel value={tab} index="play">
-            TBA
           </CustomTabPanel>
           <CustomTabPanel value={tab} index="stake">
             <Staking />
