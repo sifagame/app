@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import { formatEther, maxInt256, parseEther, parseUnits } from "viem";
 import { ErrorMessage, SuccessMessage } from "./Messages";
+import useAnalyticsEventTracker from "../hooks/useAnalyticsEventTracker";
 
 export type StakingStatus = {
   decimals: number;
@@ -55,6 +56,7 @@ const sifaContractConfig = {
 
 const Staking = () => {
   const account = useAccount();
+  const gaEvent = useAnalyticsEventTracker("Staking");
   const [status, setStatus] = useState({
     ...defaultStakingStatus,
   } as StakingStatus);
@@ -117,6 +119,7 @@ const Staking = () => {
       functionName: "approve",
       args: [contracts.Vault, maxInt256],
     });
+    gaEvent("Staking Approve Started");
   };
 
   const deposit = () => {
@@ -125,6 +128,7 @@ const Staking = () => {
       functionName: "deposit",
       args: [depositAmount, account.address],
     });
+    gaEvent("Staking Deposit Started");
   };
 
   const redeem = () => {
@@ -133,6 +137,7 @@ const Staking = () => {
       functionName: "redeem",
       args: [redeemAmount, account.address, account.address],
     });
+    gaEvent("Staking Redeem Started");
   };
 
   const handleChangeDepositAmount = (
@@ -179,7 +184,6 @@ const Staking = () => {
   };
 
   useEffect(() => {
-    console.log(data);
     if (data) {
       setStatus({
         decimals: data?.[0]?.result as number,
@@ -197,9 +201,7 @@ const Staking = () => {
   // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
     refetch();
-    setRedeemAmount(0n);
-    setDepositAmount(0n);
-  }, [txStatus, error]);
+  }, [txStatus]);
 
   return (
     <>
@@ -208,12 +210,10 @@ const Staking = () => {
           <Typography variant="h5" sx={{ pb: 1 }}>
             Your shares: {formatEther(status.shares)}
           </Typography>
-		  <Typography>
-            SIFA value: {formatEther(status.maxWithdraw)}
-          </Typography>
-          <Typography>
-            Share price: {formatEther(status.sharePrice)} SIFA/share
-          </Typography>
+		  <ul>
+			<li>SIFA value: {formatEther(status.maxWithdraw)}</li>
+			<li>Share price: {formatEther(status.sharePrice)} SIFA/share</li>
+		  </ul>
         </Grid>
         <Grid item md={4}>
           <Typography variant="h5" sx={{ pb: 2 }}>

@@ -88,11 +88,6 @@ export const Emitter = () => {
     writeContract({ ...emitterContractConfig, functionName: "start" });
   };
 
-  if ("success" === txStatus) {
-    gaEvent("Withdraw Success");
-    refetch();
-  }
-
   // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
     const interval = setInterval(refetch, 10000);
@@ -118,6 +113,14 @@ export const Emitter = () => {
       });
     }
   }, [data]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies:
+  useEffect(() => {
+    refetch();
+    if ("success" === txStatus) {
+      gaEvent("Withdraw Success");
+    }
+  }, [txStatus, error]);
 
   return (
     <>
