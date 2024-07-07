@@ -53,24 +53,16 @@ const Faucet = () => {
   });
 
   const claim = () => {
-    gaEvent("Claim Attempt", "");
+    gaEvent("Faucet Claim Attempt", "");
     writeContract({
       ...faucetContractConfig,
       functionName: "drop",
       args: [address],
     });
-	const newStatus = status;
-	newStatus.available = false;
-	setStatus(newStatus);
+    const newStatus = status;
+    newStatus.available = false;
+    setStatus(newStatus);
   };
-
-  if (error) {
-    gaEvent("Claim Failed");
-  }
-
-  if ("success" === txStatus) {
-    gaEvent("Claim Success");
-  }
 
   const { data, refetch } = useReadContracts({
     contracts: [
@@ -112,19 +104,30 @@ const Faucet = () => {
     "pending" === writeStatus ||
     ("success" === writeStatus && "pending" === txStatus);
 
+  useEffect(() => {
+    if (data) {
+      setStatus({
+        available: data[0]?.result as boolean,
+        nextClaimAt: data[1]?.result as bigint,
+        decimals: data[2].result as number,
+        faucetBalance: data[3].result as bigint,
+        dropAmount: data[4].result as bigint,
+        delay: Number(data[5].result),
+        requireEth: data[6].result as bigint,
+      });
+    }
+  }, [data]);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
-    setStatus({
-      available: data?.[0]?.result as boolean,
-      nextClaimAt: data?.[1]?.result as bigint,
-      decimals: data?.[2].result as number,
-      faucetBalance: data?.[3].result as bigint,
-      dropAmount: data?.[4].result as bigint,
-      delay: Number(data?.[5].result),
-      requireEth: data?.[6].result as bigint,
-    });
-	refetch();
-  }, [data, inProgress]);
+    refetch();
+    if ("success" === txStatus) {
+      gaEvent("Faucet Claim Success");
+    }
+    if ("error" === txStatus) {
+      gaEvent("Faucet Claim Failed");
+    }
+  }, [txStatus]);
 
   return (
     <>
