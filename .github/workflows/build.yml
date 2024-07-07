@@ -5,15 +5,9 @@ on:
     branches:
       - develop
 
-env:
-  VITE_WC_PROJECT_ID: ${{ secrets.VITE_WC_PROJECT_ID }}
-  VITE_ADDRESS_SIFA: ${{ vars.VITE_ADDRESS_SIFA }}
-  VITE_ADDRESS_FAUCET: ${{ vars.VITE_ADDRESS_FAUCET }}
-
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: testnet
     steps:
       - name: Checkout
         uses: actions/checkout@v4
