@@ -63,6 +63,10 @@ const Staking = () => {
   } as StakingStatus);
   const [depositAmount, setDepositAmount] = useState(0n);
   const [redeemAmount, setRedeemAmount] = useState(0n);
+  const [depositEnabled, setDepositEnabled] = useState(false);
+  const [depositWarning, setDepositWarning] = useState("");
+  const [redeemEnabled, setRedeemEnabled] = useState(false);
+  const [redeemWarning, setRedeemWarning] = useState("");
 
   const { data: hash, error, writeContract } = useWriteContract();
 
@@ -223,12 +227,30 @@ const Staking = () => {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
-    refetchPreviewRedeem();
+    const newMessage =
+      redeemAmount > status.maxRedeem
+        ? "You cannot redeem more shares than you have"
+        : "";
+    setRedeemWarning(newMessage);
+    setRedeemEnabled(newMessage === "");
+    if ("" === newMessage) {
+      refetchPreviewRedeem();
+    }
   }, [redeemAmount]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
-    refetchPreviewDeposit();
+    const newMessage =
+      status.allowance < depositAmount
+        ? "Your deposit amount is less than approved"
+        : status.balance < depositAmount
+          ? "You cannot deposit more than your SIFA balance"
+          : "";
+    setDepositWarning(newMessage);
+    setDepositEnabled(newMessage === "");
+    if ("" === newMessage) {
+      refetchPreviewDeposit();
+    }
   }, [depositAmount]);
 
   return (
@@ -274,6 +296,9 @@ const Staking = () => {
           <Typography>
             Receive {formatEther((previewDeposit as bigint) || 0n)} shares
           </Typography>
+          <Typography variant="body2" sx={{ color: "error.main" }}>
+            {depositWarning}
+          </Typography>
           <FormGroup sx={{ pb: 1 }}>
             <Button variant="outlined" onClick={approve}>
               Approve
@@ -283,7 +308,7 @@ const Staking = () => {
             <Button
               variant="contained"
               onClick={deposit}
-              disabled={depositAmount <= 0n}
+              disabled={!depositEnabled}
             >
               Deposit
             </Button>
@@ -330,10 +355,13 @@ const Staking = () => {
           <Typography>
             Withdraw {formatEther((previewRedeem as bigint) || 0n)} SIFA
           </Typography>
+          <Typography variant="body2" sx={{ color: "error.main" }}>
+            {redeemWarning}
+          </Typography>
           <FormGroup>
             <Button
               variant="contained"
-              disabled={redeemAmount <= 0n}
+              disabled={!redeemEnabled}
               onClick={redeem}
             >
               Redeem
