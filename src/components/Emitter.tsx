@@ -12,6 +12,7 @@ import { formatUnits } from "viem";
 import { Button } from "@mui/material";
 import useAnalyticsEventTracker from "../hooks/useAnalyticsEventTracker";
 import { ErrorMessage, SuccessMessage } from "./Messages";
+import { niceNumber } from "../utils";
 
 export type EmitterStatus = {
   owner: `0x${string}`;
@@ -145,14 +146,14 @@ export const Emitter = () => {
             : "no"}
         </li>
         <li>
-          Tokens locked: {formatUnits(status.locked, status.decimals)} SIFA
+          Tokens locked: {niceNumber(formatUnits(status.locked, status.decimals))} SIFA
         </li>
         <li>
-          Tokens released: {formatUnits(status.released, status.decimals)} SIFA
+          Tokens released: {niceNumber(formatUnits(status.released, status.decimals))} SIFA
         </li>
         <li>
           Tokens available to withdraw:{" "}
-          {formatUnits(status.available, status.decimals)} SIFA
+          {niceNumber(formatUnits(status.available, status.decimals))} SIFA
         </li>
         <li>
           Last withdrawal:{" "}

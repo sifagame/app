@@ -1,8 +1,10 @@
 import { contracts } from "../wagmi";
+import { abi as EmitterAbi } from "../contracts/Emitter.json";
 import { abi as vaultAbi } from "../contracts/Vault.json";
 import { abi as sifaAbi } from "../contracts/SifaToken.json";
 import {
   useAccount,
+  useConnectorClient,
   useReadContract,
   useReadContracts,
   useWaitForTransactionReceipt,
@@ -22,6 +24,9 @@ import {
 import { formatEther, maxInt256, parseEther, parseUnits } from "viem";
 import { ErrorMessage, SuccessMessage } from "./Messages";
 import useAnalyticsEventTracker from "../hooks/useAnalyticsEventTracker";
+import { AddCircleOutline } from "@mui/icons-material";
+import { watchAsset } from "viem/actions";
+import { niceNumber } from "../utils";
 
 export type StakingStatus = {
   decimals: number;
@@ -32,6 +37,9 @@ export type StakingStatus = {
   sharePrice: bigint;
   maxRedeem: bigint;
   maxWithdraw: bigint;
+  totalStaked: bigint;
+  emissionRate: bigint;
+  emissionStarted: boolean;
 };
 
 const defaultStakingStatus: StakingStatus = {
@@ -43,6 +51,9 @@ const defaultStakingStatus: StakingStatus = {
   sharePrice: 0n,
   maxRedeem: 0n,
   maxWithdraw: 0n,
+  totalStaked: 0n,
+  emissionRate: 0n,
+  emissionStarted: false,
 };
 
 const vaultContractConfig = {
@@ -53,6 +64,11 @@ const vaultContractConfig = {
 const sifaContractConfig = {
   abi: sifaAbi,
   address: contracts.SIFA,
+};
+
+const emitterContractConfig = {
+  abi: EmitterAbi,
+  address: contracts.Emitter,
 };
 
 const Staking = () => {
@@ -67,6 +83,7 @@ const Staking = () => {
   const [depositWarning, setDepositWarning] = useState("");
   const [redeemEnabled, setRedeemEnabled] = useState(false);
   const [redeemWarning, setRedeemWarning] = useState("");
+  const [add, setAdd] = useState(false);
 
   const { data: hash, error, writeContract } = useWriteContract();
 
@@ -129,6 +146,16 @@ const Staking = () => {
         functionName: "maxWithdraw",
         args: [account.address],
       },
+      {
+        ...sifaContractConfig,
+        functionName: "balanceOf",
+        args: [contracts.Vault],
+      },
+      {
+        ...emitterContractConfig,
+        functionName: "rate",
+      },
+      { ...emitterContractConfig, functionName: "started" },
     ],
   });
 
@@ -168,11 +195,9 @@ const Staking = () => {
 
   const handleMaxDeposit = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    const newDepositAmount = [
-      status.allowance,
-      status.balance,
-      status.maxDeposit,
-    ].reduce((m, e) => (e < m ? e : m));
+    const newDepositAmount = [status.balance, status.maxDeposit].reduce(
+      (m, e) => (e < m ? e : m)
+    );
     setDepositAmount(newDepositAmount);
   };
 
@@ -201,7 +226,9 @@ const Staking = () => {
     return (BigInt(percent) * status.maxRedeem) / 100n;
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
+    setAdd((data?.[4]?.result as bigint) > status.shares);
     if (data) {
       setStatus({
         decimals: data?.[0]?.result as number,
@@ -212,6 +239,9 @@ const Staking = () => {
         sharePrice: data?.[5]?.result as bigint,
         maxRedeem: data?.[6]?.result as bigint,
         maxWithdraw: data?.[7]?.result as bigint,
+        totalStaked: data?.[8]?.result as bigint,
+        emissionRate: data?.[9]?.result as bigint,
+        emissionStarted: (data?.[9]?.result as number) > 0,
       });
     }
   }, [data]);
@@ -247,22 +277,65 @@ const Staking = () => {
           ? "You cannot deposit more than your SIFA balance"
           : "";
     setDepositWarning(newMessage);
-    setDepositEnabled(newMessage === "");
+    setDepositEnabled(newMessage === "" && depositAmount > 0n);
     if ("" === newMessage) {
       refetchPreviewDeposit();
     }
   }, [depositAmount]);
+
+  const { data: client } = useConnectorClient();
+
+  const addVaultToken = () => {
+    if (client) {
+      watchAsset(client, {
+        type: "ERC20",
+        options: {
+          address: contracts.Vault,
+          symbol: "vSIFA",
+          decimals: 18,
+        },
+      });
+    }
+  };
 
   return (
     <>
       <Grid container spacing={2}>
         <Grid item md={4}>
           <Typography variant="h5" sx={{ pb: 1 }}>
-            Your shares: {formatEther(status.shares)}
+            Your shares: {niceNumber(formatEther(status.shares))}
           </Typography>
+          {add && (
+            <Button
+              size="small"
+              onClick={addVaultToken}
+              endIcon={<AddCircleOutline />}
+            >
+              Add to Wallet
+            </Button>
+          )}
           <ul>
-            <li>SIFA value: {formatEther(status.maxWithdraw)}</li>
-            <li>Share price: {formatEther(status.sharePrice)} SIFA/share</li>
+            <li>SIFA value: {niceNumber(formatEther(status.maxWithdraw))}</li>
+            <li>
+              Share price: {niceNumber(formatEther(status.sharePrice))}{" "}
+              SIFA/share
+            </li>
+            <li>Total staked: {niceNumber(formatEther(status.totalStaked))}</li>
+            <li>
+              Daily emission:{" "}
+              {niceNumber(formatEther(status.emissionRate * 60n * 60n * 24n))}
+            </li>
+            {status.totalStaked > 0 && status.emissionStarted && (
+              <li>
+                SIFA Stake APR{" "}
+                {niceNumber(
+                  (Number(status.emissionRate * 60n * 60n * 24n * 365n) /
+                    Number(status.totalStaked)) *
+                    100
+                )}
+                %
+              </li>
+            )}
           </ul>
         </Grid>
         <Grid item md={4}>

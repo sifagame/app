@@ -1,16 +1,22 @@
-import { Avatar, Badge, Typography, styled } from "@mui/material";
-import { useReadContracts, useSwitchChain } from "wagmi";
+import { Avatar, Badge, IconButton, Typography, styled } from "@mui/material";
+import { useConnectorClient, useReadContracts, useSwitchChain } from "wagmi";
 import { abi as SifaAbi } from "../contracts/SifaToken.json";
 import { contracts } from "../wagmi";
-import { truncateEthAddress } from "../utils";
+import { niceNumber, truncateEthAddress } from "../utils";
+import { useEffect, useState } from "react";
+import { watchAsset } from "viem/actions";
+import { AddCircleOutline } from "@mui/icons-material";
 import { formatUnits } from "viem";
-import { useEffect } from "react";
 
 interface BalanceProps {
   address: `0x${string}`;
 }
 
 const Balance = (props: BalanceProps) => {
+  const [decimals, setDecimals] = useState(0);
+  const [symbol, setSymbol] = useState("");
+  const [balance, setBalance] = useState(0n);
+
   const contractConfig = {
     abi: SifaAbi,
     address: contracts.SIFA,
@@ -34,12 +40,11 @@ const Balance = (props: BalanceProps) => {
     ],
   });
 
-  const [decimals, symbol, rawbalance] = data || [];
-
-  const balance = formatUnits(
-    (rawbalance?.result as bigint) || 0n,
-    (decimals?.result as number) || 0
-  );
+  useEffect(() => {
+    setDecimals(data?.[0]?.result as number);
+    setSymbol(data?.[1]?.result as string);
+    setBalance(data?.[2]?.result as bigint);
+  }, [data]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
@@ -51,9 +56,29 @@ const Balance = (props: BalanceProps) => {
     };
   }, []);
 
+  const { data: client } = useConnectorClient();
+
+  const addToken = () => {
+    if (client) {
+      watchAsset(client, {
+        type: "ERC20",
+        options: {
+          address: contracts.SIFA,
+          symbol: "SIFA",
+          decimals: 18,
+        },
+      });
+    }
+  };
+
   return (
     <Typography sx={{ pt: 0.5, pb: 0.5, pr: 1, lineHeight: 2 }}>
-      {balance ? `${balance} ${symbol?.result?.toString()}` : ""}
+      {balance ? `${niceNumber(formatUnits(balance, decimals))} ${symbol}` : ""}
+      {balance > 0n && (
+        <IconButton size="small" onClick={addToken}>
+          <AddCircleOutline />
+        </IconButton>
+      )}
     </Typography>
   );
 };

@@ -14,6 +14,7 @@ import { ErrorMessage, SuccessMessage } from "./Messages";
 import { formatUnits } from "viem";
 import useAnalyticsEventTracker from "../hooks/useAnalyticsEventTracker";
 import { useEffect, useState } from "react";
+import { niceNumber } from "../utils";
 
 interface FaucetStatus {
   available: boolean;
@@ -135,7 +136,7 @@ const Faucet = () => {
       <ul>
         <li>
           Balance available:{" "}
-          {formatUnits(status.faucetBalance || 0n, status.decimals || 0)} SIFA
+          {niceNumber(formatUnits(status.faucetBalance || 0n, status.decimals || 0))} SIFA
         </li>
         <li>
           Claim amount:{" "}
