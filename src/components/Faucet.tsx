@@ -1,20 +1,31 @@
-import { Button, CircularProgress } from "@mui/material";
+import { Button, CircularProgress, Typography } from "@mui/material";
 import { green } from "@mui/material/colors";
 import { RemainingTime } from "./RemainingTime";
 import {
   useAccount,
+  useBalance,
   useReadContracts,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
 import { abi as FaucetAbi } from "../contracts/Faucet.json";
 import { abi as SifaAbi } from "../contracts/SifaToken.json";
-import { contracts } from "../wagmi";
+import { contracts, faucetRequiredEth } from "../wagmi";
 import { ErrorMessage, SuccessMessage } from "./Messages";
-import { formatUnits } from "viem";
+import { formatEther, formatUnits } from "viem";
 import useAnalyticsEventTracker from "../hooks/useAnalyticsEventTracker";
 import { useEffect, useState } from "react";
 import { niceNumber } from "../utils";
+
+const faucetContractConfig = {
+  abi: FaucetAbi,
+  address: contracts.Faucet,
+};
+
+const sifaContractConfig = {
+  abi: SifaAbi,
+  address: contracts.SIFA,
+};
 
 interface FaucetStatus {
   available: boolean;
@@ -28,19 +39,13 @@ interface FaucetStatus {
 
 const Faucet = () => {
   const [status, setStatus] = useState({} as FaucetStatus);
+  const [buttonDisabled, setButtonDisabled] = useState(true);
+  const [faucetWarning, setFaucetWarning] = useState("");
+  const [inProgress, setInProgress] = useState(false);
   const gaEvent = useAnalyticsEventTracker("Faucet");
   const account = useAccount();
   const address = account?.address || "0x";
-
-  const faucetContractConfig = {
-    abi: FaucetAbi,
-    address: contracts.Faucet,
-  };
-
-  const sifaContractConfig = {
-    abi: SifaAbi,
-    address: contracts.SIFA,
-  };
+  const { data: ethBalance } = useBalance({ address: address });
 
   const {
     data: hash,
@@ -52,18 +57,6 @@ const Faucet = () => {
   const { status: txStatus } = useWaitForTransactionReceipt({
     hash: hash,
   });
-
-  const claim = () => {
-    gaEvent("Faucet Claim Attempt", "");
-    writeContract({
-      ...faucetContractConfig,
-      functionName: "drop",
-      args: [address],
-    });
-    const newStatus = status;
-    newStatus.available = false;
-    setStatus(newStatus);
-  };
 
   const { data, refetch } = useReadContracts({
     contracts: [
@@ -101,9 +94,12 @@ const Faucet = () => {
     ],
   });
 
-  const inProgress =
-    "pending" === writeStatus ||
-    ("success" === writeStatus && "pending" === txStatus);
+  useEffect(() => {
+    setInProgress(
+      "pending" === writeStatus ||
+        ("success" === writeStatus && "pending" === txStatus)
+    );
+  }, [writeStatus, txStatus]);
 
   useEffect(() => {
     if (data) {
@@ -130,13 +126,41 @@ const Faucet = () => {
     }
   }, [txStatus]);
 
+  useEffect(() => {
+    setButtonDisabled(
+      !status.available ||
+        inProgress ||
+        (ethBalance?.value || 0n) < faucetRequiredEth
+    );
+    setFaucetWarning(
+      (ethBalance?.value || 0n) < faucetRequiredEth
+        ? `Your ETH balance ${formatEther(ethBalance?.value || 0n)} is less than ${formatEther(faucetRequiredEth)} required to use Faucet`
+        : ""
+    );
+  }, [status.available, inProgress, ethBalance]);
+
+  const claim = () => {
+    gaEvent("Faucet Claim Attempt", "");
+    writeContract({
+      ...faucetContractConfig,
+      functionName: "drop",
+      args: [address],
+    });
+    const newStatus = status;
+    newStatus.available = false;
+    setStatus(newStatus);
+  };
+
   return (
     <>
       <p>Faucet status:</p>
       <ul>
         <li>
           Balance available:{" "}
-          {niceNumber(formatUnits(status.faucetBalance || 0n, status.decimals || 0))} SIFA
+          {niceNumber(
+            formatUnits(status.faucetBalance || 0n, status.decimals || 0)
+          )}{" "}
+          SIFA
         </li>
         <li>
           Claim amount:{" "}
@@ -149,11 +173,10 @@ const Faucet = () => {
         </li>
       </ul>
       {!status.available && <RemainingTime nextClaimAt={status.nextClaimAt} />}
-      <Button
-        variant="contained"
-        onClick={claim}
-        disabled={!status.available || inProgress}
-      >
+      <Typography variant="body2" sx={{ color: "error.main" }}>
+        {faucetWarning}
+      </Typography>
+      <Button variant="contained" onClick={claim} disabled={buttonDisabled}>
         Claim
       </Button>
       {inProgress && (
