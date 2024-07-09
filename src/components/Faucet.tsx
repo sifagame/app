@@ -117,7 +117,9 @@ const Faucet = () => {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies:
   useEffect(() => {
-    refetch();
+    if ("pending" !== txStatus) {
+      refetch();
+    }
     if ("success" === txStatus) {
       gaEvent("Faucet Claim Success");
     }
