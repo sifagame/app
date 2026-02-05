@@ -82,10 +82,10 @@ export const Emitter = () => {
   });
 
   const withdraw = () => {
+	gaEvent("Withdraw Attempt");
     writeContract({ ...emitterContractConfig, functionName: "withdraw" });
   };
   const start = () => {
-    gaEvent("Withdraw Attempt");
     writeContract({ ...emitterContractConfig, functionName: "start" });
   };
 
