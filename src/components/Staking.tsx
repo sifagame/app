@@ -78,7 +78,9 @@ const Staking = () => {
     ...defaultStakingStatus,
   } as StakingStatus);
   const [depositAmount, setDepositAmount] = useState(0n);
+  const [depositInputValue, setDepositInputValue] = useState("0");
   const [redeemAmount, setRedeemAmount] = useState(0n);
+  const [redeemInputValue, setRedeemInputValue] = useState("0");
   const [depositEnabled, setDepositEnabled] = useState(false);
   const [depositWarning, setDepositWarning] = useState("");
   const [redeemEnabled, setRedeemEnabled] = useState(false);
@@ -189,8 +191,10 @@ const Staking = () => {
   const handleChangeDepositAmount = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const newDepositAmount = parseEther(e.target.value);
-    setDepositAmount(newDepositAmount);
+    setDepositInputValue(e.target.value);
+    try {
+      setDepositAmount(parseEther(e.target.value));
+    } catch {}
   };
 
   const handleMaxDeposit = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -199,20 +203,26 @@ const Staking = () => {
       (m, e) => (e < m ? e : m)
     );
     setDepositAmount(newDepositAmount);
+    setDepositInputValue(formatEther(newDepositAmount));
   };
 
   const handleChangeRedeemAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newRedeemAmount = parseUnits(e.target.value, status.decimals);
-    setRedeemAmount(newRedeemAmount);
+    setRedeemInputValue(e.target.value);
+    try {
+      setRedeemAmount(parseUnits(e.target.value, status.decimals));
+    } catch {}
   };
 
   const handleMaxRedeem = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     setRedeemAmount(status.maxRedeem);
+    setRedeemInputValue(formatEther(status.maxRedeem));
   };
 
   const handleChangeRedeemSlider = (_: Event, newValue: number | number[]) => {
-    setRedeemAmount(redeemPercentToAmount(newValue as number));
+    const newRedeemAmount = redeemPercentToAmount(newValue as number);
+    setRedeemAmount(newRedeemAmount);
+    setRedeemInputValue(formatEther(newRedeemAmount));
   };
 
   const redeemAmountToPercent = (amount: bigint): number => {
@@ -251,7 +261,9 @@ const Staking = () => {
     refetch();
     if ("success" === txStatus) {
       setDepositAmount(0n);
+      setDepositInputValue("0");
       setRedeemAmount(0n);
+      setRedeemInputValue("0");
     }
   }, [txStatus]);
 
@@ -353,7 +365,7 @@ const Staking = () => {
               id="deposit-amount"
               label="SIFA Amount"
               variant="outlined"
-              value={formatEther(depositAmount)}
+              value={depositInputValue}
               onChange={handleChangeDepositAmount}
               InputProps={{
                 endAdornment: (
@@ -396,7 +408,7 @@ const Staking = () => {
               id="redeem-amount"
               label="Amount"
               variant="outlined"
-              value={formatEther(redeemAmount)}
+              value={redeemInputValue}
               onChange={handleChangeRedeemAmount}
               InputProps={{
                 endAdornment: (
