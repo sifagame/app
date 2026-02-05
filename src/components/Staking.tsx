@@ -241,7 +241,7 @@ const Staking = () => {
         maxWithdraw: data?.[7]?.result as bigint,
         totalStaked: data?.[8]?.result as bigint,
         emissionRate: data?.[9]?.result as bigint,
-        emissionStarted: (data?.[9]?.result as number) > 0,
+        emissionStarted: (data?.[10]?.result as number) > 0,
       });
     }
   }, [data]);
