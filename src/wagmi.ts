@@ -1,5 +1,5 @@
 import { http, createConfig } from "wagmi";
-import { arbitrum, arbitrumSepolia, hardhat } from "wagmi/chains";
+import { arbitrum, arbitrumSepolia, hardhat, localhost } from "wagmi/chains";
 import type { Chain } from "wagmi/chains";
 import GA from "react-ga4";
 import { parseEther } from "viem";
@@ -8,7 +8,7 @@ const trackingId = import.meta.env.VITE_ANALYTICS_ID;
 GA.initialize(trackingId);
 
 const chainId = Number.parseInt(import.meta.env.VITE_NETWORK_ID);
-const chain = [arbitrum, arbitrumSepolia, hardhat].find(
+const chain = [arbitrum, arbitrumSepolia, hardhat, localhost].find(
   (c) => c.id === chainId
 );
 
